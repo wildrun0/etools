@@ -8,6 +8,12 @@ function preReload()
 	command.remove('clients')
 end
 
+function onHandshake(cl)
+	if cl:isop() then
+		cl:setdispname("&c" .. cl:getname())
+	end
+end
+
 function tpPlayers(caller, args)
 	if not args then
 		return '&cUsage: /tp <to> or /tp <whom> <to>'
