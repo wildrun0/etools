@@ -1,6 +1,7 @@
 allowHotReload(true)
 -- all lua commands for cserver you can find in igor725/cs-lua/src
-function preReload()
+
+function delcommands()
 	command.remove('tp')
 	command.remove('tppos')
 	command.remove('afk')
@@ -8,6 +9,12 @@ function preReload()
 	command.remove('clients')
 end
 
+function preReload()
+	delcommands()
+end
+function onStop()
+	delcommands()
+end
 function tpPlayers(caller, args)
 	if not args then
 		return '&cUsage: /tp <to> or /tp <whom> <to>'
