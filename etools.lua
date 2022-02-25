@@ -156,10 +156,6 @@ function addClient(player)
 	end
 end
 
-function onSpawn(pl)
-	print("PLAYER SPAWNED")
-end
-
 function onHandshake(cl)
 	if cl:isop() then
 		cl:setdispname("&c" .. cl:getname())
