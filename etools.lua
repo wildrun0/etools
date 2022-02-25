@@ -8,12 +8,6 @@ function preReload()
 	command.remove('clients')
 end
 
-function onHandshake(cl)
-	if cl:isop() then
-		cl:setdispname("&c" .. cl:getname())
-	end
-end
-
 function tpPlayers(caller, args)
 	if not args then
 		return '&cUsage: /tp <to> or /tp <whom> <to>'
@@ -62,69 +56,62 @@ end
 function switchAFK(player, mode)
 	if mode == nil then
 		mode = true
+		pLastActivity[player].time = (os.time() - AFK_TIME*1000) -- чтобы его из афк не выкинуло
 	end
 	if (pAfkList[player]) and (not mode) then
 		pAfkList[player] = nil
 		client.getbroadcast():chat(("&d%s no longer afk"):format(player:getname()))
+		pLastActivity[player].time = os.time()
 	elseif (not pAfkList[player]) and (mode) then
 		pAfkList[player] = true
 		client.getbroadcast():chat(("&d%s went afk"):format(player:getname()))
 	end
-	if not mode then
-		pLastActivity[player] = timer
-	end
 end
 
 function onTick(tick)
-	timer = timer + tick
-	if math.floor(timer/1000) % 30 == 0 then
+	if os.time() % 1 == 0 then
 		for player, lastActivity in pairs(pLastActivity) do
-			if timer - lastActivity >= AFK_TIME*1000 then
+			if os.time() - lastActivity.time >= AFK_TIME*1000 then
 				switchAFK(player, true)
+			else
+				switchAFK(player, false)
 			end
 		end
 	end
 end
 
 function onRotate(player)
-	switchAFK(player, false)
-end
-
-function onPlayerClick(player, args)
-	switchAFK(player, false)
+	pLastActivity[player].time = os.time()
 end
 
 function onMove(player)
-	local playerPos = player:getpositiona()
-	local x,y,z = playerPos:get()
-	if not pLastMovement[player] then
-		pLastMovement[player] = {}
-	end
-	local playerMovement = pLastMovement[player]
-	table.insert(playerMovement, {['x'] = x, ['y'] = y, ['z'] = z, ['time'] = timer})
-	if #playerMovement > 2 then
-		table.remove(playerMovement, 1)
-	end
-	if #playerMovement == 2 then
-		local function calculate_speed(axis)
-			local distance = playerMovement[#playerMovement][axis] - playerMovement[#playerMovement-1][axis]
-			if (distance < 0) and (axis == 'y') then
-				return 0
-			end
-			local time = playerMovement[#playerMovement]['time'] - playerMovement[#playerMovement-1]['time']
-			local speed = (distance/time)*1000
-			return math.abs(speed)
+	local playerMovements = pLastActivity[player]
+	playerMovements.pastvec:set(playerMovements.currentvec:get())
+	player:getposition(playerMovements.currentvec)
+	local function calculate_coords(axis)
+		local coord_diff = playerMovements.currentvec[axis] - playerMovements.pastvec[axis]
+		if (coord_diff < 0) and (axis == "y") then
+			return 0
 		end
-		if calculate_speed('x') > 3 or calculate_speed('y') > 2 or calculate_speed("z") > 3 then
+		return math.abs(coord_diff)
+	end
+	if (pAfkList[player]) and (not pLastActivity[player].washit) then
+		if (calculate_coords('x') > PLAYER_AFK_THRESHOLD) or (calculate_coords("y") > PLAYER_AFK_THRESHOLD) or (calculate_coords("z") > PLAYER_AFK_THRESHOLD) then
 			switchAFK(player, false)
 		end
+	end
+end
+
+function onPlayerClick(player, args)
+	local enemyTarget = args.target
+	if pAfkList[enemyTarget] then
+		pLastActivity[enemyTarget].washit = true
 	end
 end
 
 function onDisconnect(player)
 	pAfkList[player] = nil
 	pLastActivity[player] = nil
-	pLastMovement[player] = nil
 	local playerName, playerApp = player:getname(), player:getappname()
 	for clientIndex, clientPlayer in ipairs(clients[playerApp]) do
 		if clientPlayer == playerName then
@@ -149,7 +136,7 @@ function onMessage(cl, _, text)
 		end
 	end
 	if text ~= '/afk' then
-		switchAFK(cl, false)
+		pLastActivity[cl].time = os.time()
 	end
 end
 
@@ -169,11 +156,18 @@ function addClient(player)
 	end
 end
 
-function onSpawn(player)
-	if player:isfirstspawn() then
-		addClient(player)
-	end
+function onSpawn(pl)
+	print("PLAYER SPAWNED")
 end
+
+function onHandshake(cl)
+	if cl:isop() then
+		cl:setdispname("&c" .. cl:getname())
+	end
+	pLastActivity[cl] = {washit = false, pastvec = vector.float(), currentvec = cl:getpositiona(), time = os.time()}
+	addClient(cl)
+end
+
 
 function onStart()
 	command.add('tp', 'Teleport to player', CMDF_OP, tpPlayers)
@@ -185,8 +179,10 @@ function onStart()
 	clients = {}
 	pAfkList = {}
 	pLastActivity = {}
-	pLastMovement = {}
 	AFK_TIME = 90
-	timer = 0
-	client.iterall(addClient)
+	PLAYER_AFK_THRESHOLD = 0.03125
+	client.iterall(function(player)
+		pLastActivity[player] = {washit = false, pastvec = vector.float(), currentvec = player:getpositiona(), time = os.time()}
+		addClient(player)
+	end)
 end
