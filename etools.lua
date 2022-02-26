@@ -9,9 +9,19 @@ function delcommands()
 	command.remove('clients')
 end
 
-onStop = delcommands
 preReload = delcommands
 
+function onStop()
+	delcommands()
+	client.iterall(function(players)
+		if players:isop() then
+			players:setdispname("&c"..players:getname())
+		else
+			players:setdispname(players:getname())
+		end
+		players:update()
+	end)
+end
 function tpPlayers(caller, args)
 	if not args then
 		return '&cUsage: /tp <to> or /tp <whom> <to>'
@@ -103,7 +113,7 @@ function onTick(tick)
 			end
 		end
 		if (lastActivity.isMoving) then
-			if (timer - lastActivity.lastTickMovement > 300) then
+			if (timer - lastActivity.lastTickMovement > 500) then
 				lastActivity.isMoving = false
 				if (lastActivity.washit) then
 					lastActivity.washit = false
@@ -195,10 +205,11 @@ function addClient(player)
 end
 
 function onHandshake(cl)
+	local newUserName = cl:getname()
 	if cl:isop() then
-		cl:setdispname("&c" .. cl:getname())
+		cl:setdispname("&c" .. newUserName)
 	end
-	pAfkList[cl] = {isAfk = false, callTime = 0}
+	pAfkList[cl] = {name = newUserName, isAfk = false, callTime = 0}
 	pLastActivity[cl] = {lastTickMovement = timer, washit = false, pastvec = vector.float(), currentvec = cl:getpositiona(), time = os.time()}
 	addClient(cl)
 end
@@ -218,8 +229,8 @@ function onStart()
 	command.add('clients', 'List of the clients player are using, and who uses which client', CMDF_CLIENT, clients)
 	coordsPattern = '^(.-)%s?([-+]?%d*%.?%d*)%s+([-+]?%d*%.?%d*)%s+([-+]?%d*%.?%d*)$'
 	clients = {}
-	pAfkList = {}
-	pLastActivity = {}
+	pAfkList = pAfkList or {}
+	pLastActivity = pLastActivity or {} 
 	plSettings = config.new{
 		name = "etools.cfg",
 		items = {
@@ -245,8 +256,8 @@ function onStart()
 	PLAYER_AFK_THRESHOLD = 0.0625
 	timer = 0
 	client.iterall(function(player)
-		pLastActivity[player] = {lastTickMovement = timer, washit = false, pastvec = vector.float(), currentvec = player:getpositiona(), time = os.time()}
-		pAfkList[player] = {isAfk = false, callTime = 0}
+		pLastActivity[player] = pLastActivity[player] or {lastTickMovement = timer, washit = false, pastvec = vector.float(), currentvec = player:getpositiona(), time = os.time()}
+		pAfkList[player] = pAfkList[player] or {isAfk = false, callTime = 0}
 		addClient(player)
 	end)
 end
