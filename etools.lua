@@ -68,21 +68,22 @@ function tpPosition(caller, args)
 end
 
 function switchAFK(player, mode)
+	local timestamp = os.time()
 	if mode == nil then
-		if os.time() - pAfkList[player].callTime <= AFK_TIMEOUT then
+		if timestamp - pAfkList[player].callTime <= AFK_TIMEOUT then
 			return ("&cYou should wait before using &e/afk&c again")
 		end
 		if pLastActivity[player].isMoving then
 			return ("&cYou can't use this command while moving!")
 		end
 		mode = true
-		pLastActivity[player].time = (os.time() - AFK_TIME) -- чтобы его из афк не выкинуло
-		pAfkList[player].callTime = os.time()
+		pLastActivity[player].time = (timestamp - AFK_TIME) -- чтобы его из афк не выкинуло
+		pAfkList[player].callTime = timestamp
 	end
 	if (pAfkList[player].isAfk) and (not mode) then
 		pAfkList[player].isAfk = false
 		client.getbroadcast():chat(("%s&d is no longer afk"):format(pAfkList[player].name))
-		pLastActivity[player].time = os.time()
+		pLastActivity[player].time = timestamp
 		player:setdispname(pAfkList[player].name)
 		client.iterall(function(otherPlayer)
 			otherPlayer:update()
@@ -105,8 +106,9 @@ end
 function onTick(tick)
 	timer = timer + tick
 	for player, lastActivity in pairs(pLastActivity) do
-		if os.time() % 1 == 0 then
-			if os.time() - lastActivity.time >= AFK_TIME then
+		local timestamp = os.time()
+		if timestamp % 1 == 0 then
+			if timestamp - lastActivity.time >= AFK_TIME then
 				switchAFK(player, true)
 			else
 				switchAFK(player, false)
