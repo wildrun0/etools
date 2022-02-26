@@ -74,8 +74,8 @@ function switchAFK(player, mode)
 		client.getbroadcast():chat(("%s&d is no longer afk"):format(pAfkList[player].name))
 		pLastActivity[player].time = os.time()
 		player:setdispname(pAfkList[player].name)
-		client.iterall(function(player)
-			player:update()
+		client.iterall(function(otherPlayer)
+			otherPlayer:update()
 		end)
 	elseif (not pAfkList[player].isAfk) and (mode) then
 		pAfkList[player].isAfk = true
@@ -86,8 +86,8 @@ function switchAFK(player, mode)
 		client.getbroadcast():chat(("%s&d went afk"):format(pAfkList[player].name))
 		player:setdispname("&d[AFK] " .. pAfkList[player].name)
 		pLastActivity[player].washit = true
-		client.iterall(function(player)
-			player:update()
+		client.iterall(function(otherPlayer)
+			otherPlayer:update()
 		end)
 	end
 end
@@ -103,7 +103,7 @@ function onTick(tick)
 			end
 		end
 		if (lastActivity.isMoving) then
-			if (timer - lastActivity.lastTickMovement > 1000) then
+			if (timer - lastActivity.lastTickMovement > 300) then
 				lastActivity.isMoving = false
 				if (lastActivity.washit) then
 					lastActivity.washit = false
@@ -172,6 +172,9 @@ function onMessage(cl, _, text)
 	end
 	if text ~= '/afk' then
 		pLastActivity[cl].time = os.time()
+	end
+	if pAfkList[cl].isAfk then
+		cl:setdispname(pAfkList[cl].name)
 	end
 end
 
