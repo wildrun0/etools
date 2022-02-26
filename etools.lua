@@ -76,7 +76,7 @@ function switchAFK(player, mode)
 			return ("&cYou can't use this command while moving!")
 		end
 		mode = true
-		pLastActivity[player].time = (os.time() - AFK_TIME*1000) -- чтобы его из афк не выкинуло
+		pLastActivity[player].time = (os.time() - AFK_TIME) -- чтобы его из афк не выкинуло
 		pAfkList[player].callTime = os.time()
 	end
 	if (pAfkList[player].isAfk) and (not mode) then
