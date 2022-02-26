@@ -1,7 +1,7 @@
 allowHotReload(true)
 -- all lua commands for cserver you can find in igor725/cs-lua/src
-
 function delcommands()
+	command.remove('clear')
 	command.remove('tp')
 	command.remove('tppos')
 	command.remove('afk')
@@ -9,12 +9,9 @@ function delcommands()
 	command.remove('clients')
 end
 
-function preReload()
-	delcommands()
-end
-function onStop()
-	delcommands()
-end
+onStop = delcommands
+preReload = delcommands
+
 function tpPlayers(caller, args)
 	if not args then
 		return '&cUsage: /tp <to> or /tp <whom> <to>'
@@ -62,26 +59,55 @@ end
 
 function switchAFK(player, mode)
 	if mode == nil then
+		if os.time() - pAfkList[player].callTime <= AFK_TIMEOUT then
+			return ("&cYou should wait before using &e/afk&c again")
+		end
+		if pLastActivity[player].isMoving then
+			return ("&cYou can't use this command while moving!")
+		end
 		mode = true
 		pLastActivity[player].time = (os.time() - AFK_TIME*1000) -- чтобы его из афк не выкинуло
+		pAfkList[player].callTime = os.time()
 	end
-	if (pAfkList[player]) and (not mode) then
-		pAfkList[player] = nil
-		client.getbroadcast():chat(("&d%s no longer afk"):format(player:getname()))
+	if (pAfkList[player].isAfk) and (not mode) then
+		pAfkList[player].isAfk = false
+		client.getbroadcast():chat(("%s&d is no longer afk"):format(pAfkList[player].name))
 		pLastActivity[player].time = os.time()
-	elseif (not pAfkList[player]) and (mode) then
-		pAfkList[player] = true
-		client.getbroadcast():chat(("&d%s went afk"):format(player:getname()))
+		player:setdispname(pAfkList[player].name)
+		client.iterall(function(player)
+			player:update()
+		end)
+	elseif (not pAfkList[player].isAfk) and (mode) then
+		pAfkList[player].isAfk = true
+		pAfkList[player].name = player:getdispname()
+		if not pAfkList[player].name:match("&%a+.+") then -- гандон без префикса фуу лох
+			pAfkList[player].name = "&f"..pAfkList[player].name
+		end
+		client.getbroadcast():chat(("%s&d went afk"):format(pAfkList[player].name))
+		player:setdispname("&d[AFK] " .. pAfkList[player].name)
+		pLastActivity[player].washit = true
+		client.iterall(function(player)
+			player:update()
+		end)
 	end
 end
 
 function onTick(tick)
-	if os.time() % 1 == 0 then
-		for player, lastActivity in pairs(pLastActivity) do
+	timer = timer + tick
+	for player, lastActivity in pairs(pLastActivity) do
+		if os.time() % 1 == 0 then
 			if os.time() - lastActivity.time >= AFK_TIME*1000 then
 				switchAFK(player, true)
 			else
 				switchAFK(player, false)
+			end
+		end
+		if (lastActivity.isMoving) then
+			if (timer - lastActivity.lastTickMovement > 1000) then
+				lastActivity.isMoving = false
+				if (lastActivity.washit) then
+					lastActivity.washit = false
+				end
 			end
 		end
 	end
@@ -95,6 +121,8 @@ function onMove(player)
 	local playerMovements = pLastActivity[player]
 	playerMovements.pastvec:set(playerMovements.currentvec:get())
 	player:getposition(playerMovements.currentvec)
+	playerMovements.isMoving = true
+	playerMovements.lastTickMovement = timer
 	local function calculate_coords(axis)
 		local coord_diff = playerMovements.currentvec[axis] - playerMovements.pastvec[axis]
 		if (coord_diff < 0) and (axis == "y") then
@@ -102,7 +130,7 @@ function onMove(player)
 		end
 		return math.abs(coord_diff)
 	end
-	if (pAfkList[player]) and (not pLastActivity[player].washit) then
+	if (pAfkList[player].isAfk) and (not playerMovements.washit) then
 		if (calculate_coords('x') > PLAYER_AFK_THRESHOLD) or (calculate_coords("y") > PLAYER_AFK_THRESHOLD) or (calculate_coords("z") > PLAYER_AFK_THRESHOLD) then
 			switchAFK(player, false)
 		end
@@ -167,12 +195,19 @@ function onHandshake(cl)
 	if cl:isop() then
 		cl:setdispname("&c" .. cl:getname())
 	end
-	pLastActivity[cl] = {washit = false, pastvec = vector.float(), currentvec = cl:getpositiona(), time = os.time()}
+	pAfkList[cl] = {isAfk = false, callTime = 0}
+	pLastActivity[cl] = {lastTickMovement = timer, washit = false, pastvec = vector.float(), currentvec = cl:getpositiona(), time = os.time()}
 	addClient(cl)
 end
 
+function clearChat(caller)
+	for i=1, 12 do
+		caller:chat(" ")
+	end
+end
 
 function onStart()
+	command.add('clear', 'Clear chat', CMDF_CLIENT, clearChat)
 	command.add('tp', 'Teleport to player', CMDF_OP, tpPlayers)
 	command.add('tppos', 'Teleport to specific coords', CMDF_OP, tpPosition)
 	command.add('afk', 'Went to afk', CMDF_CLIENT, switchAFK)
@@ -182,10 +217,33 @@ function onStart()
 	clients = {}
 	pAfkList = {}
 	pLastActivity = {}
-	AFK_TIME = 90
-	PLAYER_AFK_THRESHOLD = 0.03125
+	plSettings = config.new{
+		name = "etools.cfg",
+		items = {
+			{
+				name = "afk-time",
+				comment = "Amount of seconds after which the player will be set AFK (in seconds)",
+				type = CONFIG_TYPE_INT16,
+				default = 90
+			},
+			{
+				name = "afk-timeout",
+				comment = "Timeout after a command call (in seconds)",
+				type = CONFIG_TYPE_INT16,
+				default = 15
+			}
+		}
+	}
+	if not plSettings:load() then
+		plSettings:save(true)
+	end
+	AFK_TIME = plSettings:get("afk-time")
+	AFK_TIMEOUT = plSettings:get("afk-timeout")
+	PLAYER_AFK_THRESHOLD = 0.0625
+	timer = 0
 	client.iterall(function(player)
-		pLastActivity[player] = {washit = false, pastvec = vector.float(), currentvec = player:getpositiona(), time = os.time()}
+		pLastActivity[player] = {lastTickMovement = timer, washit = false, pastvec = vector.float(), currentvec = player:getpositiona(), time = os.time()}
+		pAfkList[player] = {isAfk = false, callTime = 0}
 		addClient(player)
 	end)
 end
