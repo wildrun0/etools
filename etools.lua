@@ -106,7 +106,7 @@ function onTick(tick)
 	timer = timer + tick
 	for player, lastActivity in pairs(pLastActivity) do
 		if os.time() % 1 == 0 then
-			if os.time() - lastActivity.time >= AFK_TIME*1000 then
+			if os.time() - lastActivity.time >= AFK_TIME then
 				switchAFK(player, true)
 			else
 				switchAFK(player, false)
