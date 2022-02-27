@@ -212,6 +212,7 @@ end
 function onDisconnect(player)
 	pAfkList[player] = nil
 	pLastActivity[player] = nil
+	if not player:isinstate(PLAYER_STATE_INGAME) then return end
 	local playerName, playerApp = player:getname(), player:getappname()
 	for clientIndex, clientPlayer in ipairs(clients[playerApp]) do
 		if clientPlayer == playerName then
@@ -252,7 +253,7 @@ function onStart()
 	coordsPattern = '^(.-)%s?([-+]?%d*%.?%d*)%s+([-+]?%d*%.?%d*)%s+([-+]?%d*%.?%d*)$'
 	clients = {}
 	pAfkList = pAfkList or {}
-	pLastActivity = pLastActivity or {} 
+	pLastActivity = pLastActivity or {}
 	plSettings = config.new{
 		name = "etools.cfg",
 		items = {
@@ -291,7 +292,7 @@ end
 
 function postStart()
 	isSurvivalEnabled = survival.init()
-	if (AFK_SAFE_MODE) and (not isSurvivalEnabled)then
+	if (AFK_SAFE_MODE) and (not isSurvivalEnabled) then
 		print("ETools: afk-safe-mode requires a cs-survival plugin (not detected)")
 		AFK_SAFE_MODE = false
 	end
