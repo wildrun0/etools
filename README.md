@@ -8,3 +8,4 @@ This simple plugin brings up some commands like:
  - /afk
  - /announce
  - /clients (/list alike)
+ - /clear

@@ -91,13 +91,11 @@ function switchAFK(player, mode)
 		if AFK_SAFE_MODE then
 			player:setpvp(pAfkList[player].pvpmode)
 		end
-		client.iterall(function(otherPlayer)
-			otherPlayer:update()
-		end)
+		player:update()
 	elseif (not pAfkList[player].isAfk) and (mode) then
 		pAfkList[player].isAfk = true
 		pAfkList[player].name = player:getdispname()
-		if not pAfkList[player].name:match("&%a+.+") then -- гандон без префикса фуу лох
+		if not pAfkList[player].name:match("&%a+.+") then -- гандон без цветного ника фуу лох
 			pAfkList[player].name = "&f"..pAfkList[player].name
 		end
 		client.getbroadcast():chat(("%s&d went afk"):format(pAfkList[player].name))
@@ -107,9 +105,7 @@ function switchAFK(player, mode)
 			pAfkList[player].pvpmode = player:isinpvp()
 			player:setpvp(false)
 		end
-		client.iterall(function(otherPlayer)
-			otherPlayer:update()
-		end)
+		player:update()
 	end
 end
 
@@ -234,16 +230,27 @@ function onHandshake(cl)
 end
 
 function onUserTypeChange(cl)
+	local playerName = cl:getname()
 	if cl:isop() then
-		cl:setdispname("&c" .. cl:getname())
+		if pAfkList[cl].isAfk then
+			pLastActivity[cl].washit = true
+			pAfkList[cl].name ="&c"..playerName
+			cl:setdispname("&d[AFK] &c".. playerName)
+		else
+			cl:setdispname("&c".. playerName)
+		end
 		cl:chat("&eYou have been added to the OPs list")
 	else
-		cl:setdispname("&f" .. cl:getname())
+		if pAfkList[cl].isAfk then
+			pLastActivity[cl].washit = true
+			pAfkList[cl].name = "&f" .. playerName
+			cl:setdispname("&d[AFK] &f".. playerName)
+		else
+			cl:setdispname("&f" .. playerName)
+		end
 		cl:chat("&eYou have been removed from the OPs list")
 	end
-	client.iterall(function(otherPlayer)
-		otherPlayer:update()
-	end)
+	cl:update()
 end
 
 function clearChat(caller)
