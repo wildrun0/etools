@@ -43,6 +43,12 @@ function tpPlayers(caller, args)
 		if not u1 then targ:chat("&eTeleporting to player's world") end
 		targ:gotoworld(subjWrld)
 	end
+	if pAfkList[subj].isAfk then
+		pLastActivity[subj].washit = true
+	end
+	if pAfkList[targ].isAfk then
+		pLastActivity[targ].washit = true
+	end
 	targ:teleport(subjPos, targ:getrotationa())
 	return(succText)
 end
@@ -85,6 +91,10 @@ function switchAFK(player, mode)
 		client.getbroadcast():chat(("%s&d is no longer afk"):format(pAfkList[player].name))
 		pLastActivity[player].time = timestamp
 		player:setdispname(pAfkList[player].name)
+		pAfkList[player].name = nil
+		if AFK_SAFE_MODE then
+			player:setpvp(pAfkList[player].pvpmode)
+		end
 		client.iterall(function(otherPlayer)
 			otherPlayer:update()
 		end)
@@ -97,6 +107,10 @@ function switchAFK(player, mode)
 		client.getbroadcast():chat(("%s&d went afk"):format(pAfkList[player].name))
 		player:setdispname("&d[AFK] " .. pAfkList[player].name)
 		pLastActivity[player].washit = true
+		if AFK_SAFE_MODE then
+			pAfkList[player].pvpmode = player:isinpvp()
+			player:setpvp(false)
+		end
 		client.iterall(function(otherPlayer)
 			otherPlayer:update()
 		end)
@@ -114,10 +128,10 @@ function onTick(tick)
 				switchAFK(player, false)
 			end
 		end
-		if (lastActivity.isMoving) then
-			if (timer - lastActivity.lastTickMovement > 500) then
+		if lastActivity.isMoving then
+			if timer - lastActivity.lastTickMovement > 500 then
 				lastActivity.isMoving = false
-				if (lastActivity.washit) then
+				if lastActivity.washit then
 					lastActivity.washit = false
 				end
 			end
@@ -135,6 +149,9 @@ function onMove(player)
 	player:getposition(playerMovements.currentvec)
 	playerMovements.isMoving = true
 	playerMovements.lastTickMovement = timer
+	if (not pAfkList[player].isAfk) then
+		playerMovements.time = os.time()
+	end
 	local function calculate_coords(axis)
 		local coord_diff = playerMovements.currentvec[axis] - playerMovements.pastvec[axis]
 		if (coord_diff < 0) and (axis == "y") then
@@ -142,7 +159,7 @@ function onMove(player)
 		end
 		return math.abs(coord_diff)
 	end
-	if (pAfkList[player].isAfk) and (not playerMovements.washit) then
+	if (not playerMovements.washit) and (pAfkList[player].isAfk) then
 		if (calculate_coords('x') > PLAYER_AFK_THRESHOLD) or (calculate_coords("y") > PLAYER_AFK_THRESHOLD) or (calculate_coords("z") > PLAYER_AFK_THRESHOLD) then
 			switchAFK(player, false)
 		end
@@ -151,22 +168,8 @@ end
 
 function onPlayerClick(player, args)
 	local enemyTarget = args.target
-	if pAfkList[enemyTarget] then
+	if (enemyTarget) and (pAfkList[enemyTarget].isAfk) then
 		pLastActivity[enemyTarget].washit = true
-	end
-end
-
-function onDisconnect(player)
-	pAfkList[player] = nil
-	pLastActivity[player] = nil
-	local playerName, playerApp = player:getname(), player:getappname()
-	for clientIndex, clientPlayer in ipairs(clients[playerApp]) do
-		if clientPlayer == playerName then
-			table.remove(clients[playerApp], clientIndex)
-			if #clients[playerApp] == 0 then
-				clients[playerApp] = nil
-			end
-		end
 	end
 end
 
@@ -206,13 +209,30 @@ function addClient(player)
 	end
 end
 
-function onHandshake(cl)
-	local newUserName = cl:getname()
-	if cl:isop() then
-		cl:setdispname("&c" .. newUserName)
+function onDisconnect(player)
+	pAfkList[player] = nil
+	pLastActivity[player] = nil
+	local playerName, playerApp = player:getname(), player:getappname()
+	for clientIndex, clientPlayer in ipairs(clients[playerApp]) do
+		if clientPlayer == playerName then
+			table.remove(clients[playerApp], clientIndex)
+			if #clients[playerApp] == 0 then
+				clients[playerApp] = nil
+			end
+		end
 	end
-	pAfkList[cl] = {name = newUserName, isAfk = false, callTime = 0}
-	pLastActivity[cl] = {lastTickMovement = timer, washit = false, pastvec = vector.float(), currentvec = cl:getpositiona(), time = os.time()}
+end
+
+
+function onConnect(player)
+	pAfkList[player] = {isAfk = false, callTime = 0}
+	pLastActivity[player] = {lastTickMovement = timer, washit = false, pastvec = vector.float(), currentvec = vector.float(), time = os.time()}
+end
+
+function onHandshake(cl)
+	if cl:isop() then
+		cl:setdispname("&c" .. cl:getname())
+	end
 	addClient(cl)
 end
 
@@ -247,19 +267,32 @@ function onStart()
 				comment = "Timeout after a command call (in seconds)",
 				type = CONFIG_TYPE_INT16,
 				default = 15
+			},
+			{
+				name = "afk-safe-mode",
+				comment = "Disable pvp for player who's AFK (requires cs-survival plugin)",
+				type = CONFIG_TYPE_BOOL,
+				default = true
 			}
 		}
 	}
-	if not plSettings:load() then
-		plSettings:save(true)
-	end
+	plSettings:save(not plSettings:load())
 	AFK_TIME = plSettings:get("afk-time")
 	AFK_TIMEOUT = plSettings:get("afk-timeout")
+	AFK_SAFE_MODE = plSettings:get("afk-safe-mode")
 	PLAYER_AFK_THRESHOLD = 0.0625
-	timer = 0
+	timer = timer or 0
 	client.iterall(function(player)
-		pLastActivity[player] = pLastActivity[player] or {lastTickMovement = timer, washit = false, pastvec = vector.float(), currentvec = player:getpositiona(), time = os.time()}
+		pLastActivity[player] = pLastActivity[player] or {lastTickMovement = timer, washit = false, pastvec = vector.float(), currentvec = vector.float(), time = os.time()}
 		pAfkList[player] = pAfkList[player] or {isAfk = false, callTime = 0}
 		addClient(player)
 	end)
+end
+
+function postStart()
+	isSurvivalEnabled = survival.init()
+	if (AFK_SAFE_MODE) and (not isSurvivalEnabled)then
+		print("ETools: afk-safe-mode requires a cs-survival plugin (not detected)")
+		AFK_SAFE_MODE = false
+	end
 end
