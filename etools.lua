@@ -14,11 +14,7 @@ preReload = delcommands
 function onStop()
 	delcommands()
 	client.iterall(function(players)
-		if players:isop() then
-			players:setdispname("&c"..players:getname())
-		else
-			players:setdispname(players:getname())
-		end
+		players:setdispname(players:getname())
 		players:update()
 	end)
 end
@@ -212,7 +208,7 @@ end
 function onDisconnect(player)
 	pAfkList[player] = nil
 	pLastActivity[player] = nil
-	if not player:isinstate(PLAYER_STATE_INGAME) then return end
+	if player:isinstate(PLAYER_STATE_INITIAL) then return end
 	local playerName, playerApp = player:getname(), player:getappname()
 	for clientIndex, clientPlayer in ipairs(clients[playerApp]) do
 		if clientPlayer == playerName then
@@ -235,6 +231,19 @@ function onHandshake(cl)
 		cl:setdispname("&c" .. cl:getname())
 	end
 	addClient(cl)
+end
+
+function onUserTypeChange(cl)
+	if cl:isop() then
+		cl:setdispname("&c" .. cl:getname())
+		cl:chat("&eYou have been added to the OPs list")
+	else
+		cl:setdispname("&f" .. cl:getname())
+		cl:chat("&eYou have been removed from the OPs list")
+	end
+	client.iterall(function(otherPlayer)
+		otherPlayer:update()
+	end)
 end
 
 function clearChat(caller)
