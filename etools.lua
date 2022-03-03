@@ -188,7 +188,7 @@ end
 function clients(caller)
 	caller:chat("Players using: ")
 	for k,v in pairs(clients) do
-		caller:chat(("    &e%s: &f%s"):format(k, table.concat(v, ", ")))
+		caller:chat(("&e %s: &f%s"):format(k, table.concat(v, ", ")))
 	end
 end
 
@@ -307,8 +307,8 @@ function onStart()
 end
 
 function postStart()
-	isSurvivalEnabled = survival.init()
-	if (AFK_SAFE_MODE) and (not isSurvivalEnabled) then
+	survival.init()
+	if (AFK_SAFE_MODE) and (not survival.isready()) then
 		print("ETools: afk-safe-mode requires a cs-survival plugin (not detected)")
 		AFK_SAFE_MODE = false
 	end
