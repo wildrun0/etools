@@ -132,10 +132,12 @@ function onTick(tick)
 end
 
 function onRotate(player)
+	if player:isbot() then return end
 	pLastActivity[player].time = os.time()
 end
 
 function onMove(player)
+	if player:isbot() then return end
 	local playerMovements = pLastActivity[player]
 	playerMovements.pastvec:set(playerMovements.currentvec:get())
 	player:getposition(playerMovements.currentvec)
@@ -160,6 +162,7 @@ end
 
 function onPlayerClick(player, args)
 	local enemyTarget = args.target
+	if player:isbot() then return end
 	if (enemyTarget) and (pAfkList[enemyTarget].isAfk) then
 		pLastActivity[enemyTarget].washit = true
 	end
