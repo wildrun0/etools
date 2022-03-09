@@ -162,7 +162,7 @@ end
 
 function onPlayerClick(player, args)
 	local enemyTarget = args.target
-	if player:isbot() then return end
+	if enemyTarget and enemyTarget:isbot() then return end
 	if (enemyTarget) and (pAfkList[enemyTarget].isAfk) then
 		pLastActivity[enemyTarget].washit = true
 	end
