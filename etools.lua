@@ -1,12 +1,12 @@
 allowHotReload(true)
 -- all lua commands for cserver you can find in igor725/cs-lua/src
 function delcommands()
-	command.remove('clear')
-	command.remove('tp')
-	command.remove('tppos')
-	command.remove('afk')
-	command.remove('announce')
-	command.remove('clients')
+	command.remove("clear")
+	command.remove("tp")
+	command.remove("tppos")
+	command.remove("afk")
+	command.remove("announce")
+	command.remove("clients")
 end
 
 preReload = delcommands
@@ -21,19 +21,20 @@ end
 
 function tpPlayers(caller, args)
 	if not args then
-		return '&cUsage: /tp <to> or /tp <whom> <to>'
+		return "&cUsage: /tp <to> or /tp <whom> <to>"
 	end
 	local targ, subj = caller, nil
-	local u1, u2 = args:match('^(.-)%s(.-)$')
+	local u1, u2 = args:match("^(.-)%s(.-)$")
 	if u1 then
 		targ, subj = client.getbyname(u1, u2)
 	else
 		subj = client.getbyname(args)
 	end
 	if not (targ and subj) then
-		return '&cPlayer not found'
+		return "&cPlayer not found"
 	end
-	local succText = u1 and ("&e%s &awas teleported to &e%s"):format(targ:getname(), subj:getname()) or ("&aTeleported to &e%s"):format(subj:getname())
+	local succText = u1 and ("&e%s &awas teleported to &e%s"):format(targ:getname(), subj:getname()) or
+	("&aTeleported to &e%s"):format(subj:getname())
 	local targWrld, subjWrld = targ:getworld(), subj:getworld()
 	local subjPos = subj:getpositiona()
 	if targWrld ~= subjWrld then
@@ -65,7 +66,8 @@ function tpPosition(caller, args)
 			return "&cPlayer not found"
 		end
 	end
-	local succText = #playerName == 0 and ("&aTeleported to %.3f %.3f %.3f"):format(x,y,z) or ("&e%s &awas teleported to %.3f %.3f %.3f"):format(player:getname(), x,y,z)
+	local succText = #playerName == 0 and ("&aTeleported to %.3f %.3f %.3f"):format(x,y,z) or 
+	("&e%s &awas teleported to %.3f %.3f %.3f"):format(player:getname(), x,y,z)
 	player:teleport(vector.float(x, y+1, z), player:getrotationa())
 	return (succText)
 end
@@ -155,7 +157,7 @@ function onMove(player)
 		return math.abs(coord_diff)
 	end
 	if (not playerMovements.washit) and (pAfkList[player].isAfk) then
-		if (calculate_coords('x') > PLAYER_AFK_THRESHOLD) or (calculate_coords("y") > PLAYER_AFK_THRESHOLD) or (calculate_coords("z") > PLAYER_AFK_THRESHOLD) then
+		if (calculate_coords("x") > PLAYER_AFK_THRESHOLD) or (calculate_coords("y") > PLAYER_AFK_THRESHOLD) or (calculate_coords("z") > PLAYER_AFK_THRESHOLD) then
 			switchAFK(player, false)
 		end
 	end
@@ -181,7 +183,7 @@ function onMessage(cl, _, text)
 			cl:chat("&eNote that this player is afk")
 		end
 	end
-	if text ~= '/afk' then
+	if text ~= "/afk" then
 		pLastActivity[cl].time = os.time()
 	end
 	if pAfkList[cl].isAfk then
@@ -208,7 +210,7 @@ end
 function onDisconnect(player)
 	pAfkList[player] = nil
 	pLastActivity[player] = nil
-	if player:isinstate(PLAYER_STATE_INITIAL) then return end
+	if player:isinstate(CLIENT_STATE_INITIAL) then return end
 	local playerName, playerApp = player:getname(), player:getappname()
 	for clientIndex, clientPlayer in ipairs(clients[playerApp]) do
 		if clientPlayer == playerName then
@@ -222,8 +224,15 @@ end
 
 
 function onConnect(player)
-	pAfkList[player] = {isAfk = false, callTime = 0}
-	pLastActivity[player] = {lastTickMovement = timer, washit = false, pastvec = vector.float(), currentvec = vector.float(), time = os.time()}
+	pAfkList[player] = {
+		isAfk = false,
+		callTime = 0
+	}
+	pLastActivity[player] = {
+		lastTickMovement = timer, washit = false,
+		pastvec = vector.float(), time = os.time(),
+		currentvec = vector.float()
+	}
 end
 
 function onHandshake(cl)
@@ -264,13 +273,13 @@ function clearChat(caller)
 end
 
 function onStart()
-	command.add('clear', 'Clear chat', CMDF_CLIENT, clearChat)
-	command.add('tp', 'Teleport to player', CMDF_OP, tpPlayers)
-	command.add('tppos', 'Teleport to specific coords', CMDF_OP, tpPosition)
-	command.add('afk', 'Went to afk', CMDF_CLIENT, switchAFK)
-	command.add('announce', 'Make an announcement', CMDF_OP, makeAnnounce)
-	command.add('clients', 'List of the clients player are using, and who uses which client', CMDF_CLIENT, clients)
-	coordsPattern = '^(.-)%s?([-+]?%d*%.?%d*)%s+([-+]?%d*%.?%d*)%s+([-+]?%d*%.?%d*)$'
+	command.add("clear", "Clear chat", CMDF_CLIENT, clearChat)
+	command.add("tp", "Teleport to player", CMDF_OP, tpPlayers)
+	command.add("tppos", "Teleport to specific coords", CMDF_OP, tpPosition)
+	command.add("afk", "Went to afk", CMDF_CLIENT, switchAFK)
+	command.add("announce", "Make an announcement", CMDF_OP, makeAnnounce)
+	command.add("clients", "List of the clients player are using, and who uses which client", CMDF_CLIENT, clients)
+	coordsPattern = "^(.-)%s?([-+]?%d*%.?%d*)%s+([-+]?%d*%.?%d*)%s+([-+]?%d*%.?%d*)$"
 	clients = {}
 	pAfkList = pAfkList or {}
 	pLastActivity = pLastActivity or {}
@@ -311,10 +320,12 @@ function onStart()
 	end)
 
 	survival.safe(true)
-	if survival.init() then
-		if AFK_SAFE_MODE and not survival.isready() then
-			print("ETools: afk-safe-mode requires a cs-survival plugin (not detected)")
-			AFK_SAFE_MODE = false
-		end
+	survival.init()
+end
+
+function postStart()
+	if AFK_SAFE_MODE and not survival.isready() then
+		print("ETools: afk-safe-mode requires a cs-survival plugin (not detected)")
+		AFK_SAFE_MODE = false
 	end
 end
