@@ -18,6 +18,7 @@ function onStop()
 		players:update()
 	end)
 end
+
 function tpPlayers(caller, args)
 	if not args then
 		return '&cUsage: /tp <to> or /tp <whom> <to>'
@@ -84,7 +85,7 @@ function switchAFK(player, mode)
 	end
 	if (pAfkList[player].isAfk) and (not mode) then
 		pAfkList[player].isAfk = false
-		client.getbroadcast():chat(("%s&d is no longer afk"):format(pAfkList[player].name))
+		client.broadcast:chat(("%s&d is no longer afk"):format(pAfkList[player].name))
 		pLastActivity[player].time = timestamp
 		player:setdispname(pAfkList[player].name)
 		pAfkList[player].name = nil
@@ -98,7 +99,7 @@ function switchAFK(player, mode)
 		if not pAfkList[player].name:match("&%a+.+") then -- гандон без цветного ника фуу лох
 			pAfkList[player].name = "&f"..pAfkList[player].name
 		end
-		client.getbroadcast():chat(("%s&d went afk"):format(pAfkList[player].name))
+		client.broadcast:chat(("%s&d went afk"):format(pAfkList[player].name))
 		player:setdispname("&d[AFK] " .. pAfkList[player].name)
 		pLastActivity[player].washit = true
 		if AFK_SAFE_MODE then
@@ -169,7 +170,7 @@ function onPlayerClick(player, args)
 end
 
 function makeAnnounce(_, args)
-	client.getbroadcast():chat(MESSAGE_TYPE_ANNOUNCE, args)
+	client.broadcast:chat(MESSAGE_TYPE_ANNOUNCE, args)
 end
 
 function onMessage(cl, _, text)
@@ -305,14 +306,15 @@ function onStart()
 	client.iterall(function(player)
 		pLastActivity[player] = pLastActivity[player] or {lastTickMovement = timer, washit = false, pastvec = vector.float(), currentvec = vector.float(), time = os.time()}
 		pAfkList[player] = pAfkList[player] or {isAfk = false, callTime = 0}
+		onUserTypeChange(player)
 		addClient(player)
 	end)
-end
 
-function postStart()
-	survival.init()
-	if (AFK_SAFE_MODE) and (not survival.isready()) then
-		print("ETools: afk-safe-mode requires a cs-survival plugin (not detected)")
-		AFK_SAFE_MODE = false
+	survival.safe(true)
+	if survival.init() then
+		if AFK_SAFE_MODE and not survival.isready() then
+			print("ETools: afk-safe-mode requires a cs-survival plugin (not detected)")
+			AFK_SAFE_MODE = false
+		end
 	end
 end
