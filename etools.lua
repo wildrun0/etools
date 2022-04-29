@@ -319,12 +319,14 @@ function onStart()
 		addClient(player)
 	end)
 
-	survival.safe(true)
-	survival.init()
+	if survival then
+		survival.safe(true)
+		survival.init()
+	end
 end
 
 function postStart()
-	if AFK_SAFE_MODE and not survival.isready() then
+	if AFK_SAFE_MODE and (not survival or not survival.isready()) then
 		print("ETools: afk-safe-mode requires a cs-survival plugin (not detected)")
 		AFK_SAFE_MODE = false
 	end
