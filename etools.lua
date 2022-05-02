@@ -36,7 +36,7 @@ function tpPlayers(caller, args)
 	local succText = u1 and ("&e%s &awas teleported to &e%s"):format(targ:getname(), subj:getname()) or
 	("&aTeleported to &e%s"):format(subj:getname())
 	local targWrld, subjWrld = targ:getworld(), subj:getworld()
-	local subjPos = subj:getpositiona()
+	local subjPos = subj:getposition()
 	if targWrld ~= subjWrld then
 		if not u1 then targ:chat("&eTeleporting to player's world") end
 		targ:gotoworld(subjWrld)
@@ -47,7 +47,7 @@ function tpPlayers(caller, args)
 	if pAfkList[targ].isAfk then
 		pLastActivity[targ].washit = true
 	end
-	targ:teleport(subjPos, targ:getrotationa())
+	targ:teleport(subjPos, targ:getrotation())
 	return(succText)
 end
 
@@ -68,7 +68,7 @@ function tpPosition(caller, args)
 	end
 	local succText = #playerName == 0 and ("&aTeleported to %.3f %.3f %.3f"):format(x,y,z) or 
 	("&e%s &awas teleported to %.3f %.3f %.3f"):format(player:getname(), x,y,z)
-	player:teleport(vector.float(x, y+1, z), player:getrotationa())
+	player:teleport(vector.float(x, y+1, z), player:getrotation())
 	return (succText)
 end
 
@@ -315,7 +315,7 @@ function onStart()
 	client.iterall(function(player)
 		pLastActivity[player] = pLastActivity[player] or {lastTickMovement = timer, washit = false, pastvec = vector.float(), currentvec = vector.float(), time = os.time()}
 		pAfkList[player] = pAfkList[player] or {isAfk = false, callTime = 0}
-		onUserTypeChange(player)
+		if player:isop() then onUserTypeChange(player) end
 		addClient(player)
 	end)
 
