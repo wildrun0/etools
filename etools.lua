@@ -191,11 +191,12 @@ function onMessage(cl, _, text)
 	end
 end
 
-function clients(caller)
-	caller:chat("Players using: ")
-	for k,v in pairs(clients) do
-		caller:chat(("&e %s: &f%s"):format(k, table.concat(v, ", ")))
+function clientsCmd()
+	local str = "Players using: \r\n"
+	for k, v in pairs(clients) do
+		str = str .. ("&e %s: &f%s\r\n"):format(k, table.concat(v, ", "))
 	end
+	return str
 end
 
 function addClient(player)
@@ -212,6 +213,7 @@ function onDisconnect(player)
 	pLastActivity[player] = nil
 	if player:isinstate(CLIENT_STATE_INITIAL) then return end
 	local playerName, playerApp = player:getname(), player:getappname()
+	if not clients[playerApp] then return end
 	for clientIndex, clientPlayer in ipairs(clients[playerApp]) do
 		if clientPlayer == playerName then
 			table.remove(clients[playerApp], clientIndex)
@@ -278,7 +280,7 @@ function onStart()
 	command.add("tppos", "Teleport to specific coords", CMDF_OP, tpPosition)
 	command.add("afk", "Went to afk", CMDF_CLIENT, switchAFK)
 	command.add("announce", "Make an announcement", CMDF_OP, makeAnnounce)
-	command.add("clients", "List of the clients player are using, and who uses which client", CMDF_CLIENT, clients)
+	command.add("clients", "List of the clients player are using, and who uses which client", CMDF_NONE, clientsCmd)
 	coordsPattern = "^(.-)%s?([-+]?%d*%.?%d*)%s+([-+]?%d*%.?%d*)%s+([-+]?%d*%.?%d*)$"
 	clients = {}
 	pAfkList = pAfkList or {}
