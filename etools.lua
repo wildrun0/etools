@@ -191,10 +191,10 @@ function onMessage(cl, _, text)
 	end
 end
 
-function clientsCmd()
-	local str = "Players using: \r\n"
+function clientsCmd(caller)
+	local str = "&7Players using: \r\n"
 	for k, v in pairs(clients) do
-		str = str .. ("&e %s: &f%s\r\n"):format(k, table.concat(v, ", "))
+		str = str .. ("&7  %s: &f%s\r\n"):format(k, table.concat(v, ", "))
 	end
 	return str
 end
