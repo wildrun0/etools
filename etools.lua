@@ -1,12 +1,12 @@
 allowHotReload(true)
 -- all lua commands for cserver you can find in igor725/cs-lua/src
 function delcommands()
-	command.remove("clear")
-	command.remove("tp")
-	command.remove("tppos")
-	command.remove("afk")
-	command.remove("announce")
-	command.remove("clients")
+	command.remove("Clear")
+	command.remove("Tp")
+	command.remove("TpPos")
+	command.remove("AFK")
+	command.remove("Announce")
+	command.remove("Clients")
 end
 
 preReload = delcommands
@@ -21,7 +21,7 @@ end
 
 function tpPlayers(caller, args)
 	if not args then
-		return "&cUsage: /tp <to> or /tp <whom> <to>"
+		return "&cUsage: /Tp <to> or /Tp <whom> <to>"
 	end
 	local targ, subj = caller, nil
 	local u1, u2 = args:match("^(.-)%s(.-)$")
@@ -53,12 +53,12 @@ end
 
 function tpPosition(caller, args)
 	if not args then
-		return "&cUsage: /tppos <x> <y> <z> or /tppos <whom> <x> <y> <z>"
+		return "&cUsage: /TpPos <x> <y> <z> or /TpPos <whom> <x> <y> <z>"
 	end
 	local player = caller
 	local playerName, x, y, z = args:match(coordsPattern)
 	if not x then
-		return "&cUsage: /tppos <x> <y> <z> or /tppos <whom> <x> <y> <z>"
+		return "&cUsage: /TpPos <x> <y> <z> or /TpPos <whom> <x> <y> <z>"
 	end
 	if #playerName > 0 then
 		player = client.getbyname(playerName)
@@ -76,7 +76,7 @@ function switchAFK(player, mode)
 	local timestamp = os.time()
 	if mode == nil then
 		if timestamp - pAfkList[player].callTime <= AFK_TIMEOUT then
-			return ("&cYou should wait before using &e/afk&c again")
+			return ("&cYou should wait before using &e/AFK&c again")
 		end
 		if pLastActivity[player].isMoving then
 			return ("&cYou can't use this command while moving!")
@@ -103,7 +103,6 @@ function switchAFK(player, mode)
 		end
 		client.broadcast:chat(("%s&d went afk"):format(pAfkList[player].name))
 		player:setdispname("&d[AFK] " .. pAfkList[player].name)
-		pLastActivity[player].washit = true
 		if AFK_SAFE_MODE then
 			pAfkList[player].pvpmode = player:isinpvp()
 			player:setpvp(false)
@@ -176,16 +175,7 @@ function makeAnnounce(_, args)
 end
 
 function onMessage(cl, _, text)
-	local _, playerName, msg = text:match("^(/msg)%s+(.+)%s+(.-)$")
-	local playerReceiver = playerName and client.getbyname(playerName) or nil
-	if playerReceiver then
-		if pAfkList[playerReceiver] then
-			cl:chat("&eNote that this player is afk")
-		end
-	end
-	if text ~= "/afk" then
-		pLastActivity[cl].time = os.time()
-	end
+	pLastActivity[cl].time = os.time()
 	if pAfkList[cl].isAfk then
 		cl:setdispname(pAfkList[cl].name)
 	end
@@ -248,7 +238,6 @@ function onUserTypeChange(cl)
 	local playerName = cl:getname()
 	if cl:isop() then
 		if pAfkList[cl].isAfk then
-			pLastActivity[cl].washit = true
 			pAfkList[cl].name ="&c"..playerName
 			cl:setdispname("&d[AFK] &c".. playerName)
 		else
@@ -257,7 +246,6 @@ function onUserTypeChange(cl)
 		cl:chat("&eYou have been added to the OPs list")
 	else
 		if pAfkList[cl].isAfk then
-			pLastActivity[cl].washit = true
 			pAfkList[cl].name = "&f" .. playerName
 			cl:setdispname("&d[AFK] &f".. playerName)
 		else
@@ -275,12 +263,12 @@ function clearChat(caller)
 end
 
 function onStart()
-	command.add("clear", "Clear chat", CMDF_CLIENT, clearChat)
-	command.add("tp", "Teleport to player", CMDF_OP, tpPlayers)
-	command.add("tppos", "Teleport to specific coords", CMDF_OP, tpPosition)
-	command.add("afk", "Went to afk", CMDF_CLIENT, switchAFK)
-	command.add("announce", "Make an announcement", CMDF_OP, makeAnnounce)
-	command.add("clients", "List of the clients player are using, and who uses which client", CMDF_NONE, clientsCmd)
+	command.add("Clear", "Clear chat", CMDF_CLIENT, clearChat)
+	command.add("Tp", "Teleport to player", CMDF_OP, tpPlayers)
+	command.add("TpPos", "Teleport to specific coords", CMDF_OP, tpPosition)
+	command.add("AFK", "Went to afk", CMDF_CLIENT, switchAFK)
+	command.add("Announce", "Make an announcement", CMDF_OP, makeAnnounce)
+	command.add("Clients", "List of the clients player are using, and who uses which client", CMDF_NONE, clientsCmd)
 	coordsPattern = "^(.-)%s?([-+]?%d*%.?%d*)%s+([-+]?%d*%.?%d*)%s+([-+]?%d*%.?%d*)$"
 	clients = {}
 	pAfkList = pAfkList or {}
