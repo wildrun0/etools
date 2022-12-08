@@ -279,13 +279,13 @@ function onStart()
 			{
 				name = "afk-time",
 				comment = "Amount of seconds after which the player will be set AFK (in seconds)",
-				type = CONFIG_TYPE_INT16,
+				type = CONFIG_TYPE_INT,
 				default = 90
 			},
 			{
 				name = "afk-timeout",
 				comment = "Timeout after a command call (in seconds)",
-				type = CONFIG_TYPE_INT16,
+				type = CONFIG_TYPE_INT,
 				default = 15
 			},
 			{
