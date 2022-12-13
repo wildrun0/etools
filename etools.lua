@@ -1,5 +1,9 @@
-allowHotReload(true)
--- all lua commands for cserver you can find in igor725/cs-lua/src
+setInfo({
+	version = 1,
+	hotreload = false,
+	home = "https://github.com/wildrun0/etools"
+})
+-- API documentation: https://docs.igvx.ru/
 function delcommands()
 	command.remove("Clear")
 	command.remove("Tp")
@@ -116,11 +120,7 @@ function onTick(tick)
 	for player, lastActivity in pairs(pLastActivity) do
 		local timestamp = os.time()
 		if timestamp % 1 == 0 then
-			if timestamp - lastActivity.time >= AFK_TIME then
-				switchAFK(player, true)
-			else
-				switchAFK(player, false)
-			end
+			switchAFK(player, (timestamp - lastActivity.time >= AFK_TIME))
 		end
 		if lastActivity.isMoving then
 			if timer - lastActivity.lastTickMovement > 500 then
@@ -162,7 +162,7 @@ function onMove(player)
 	end
 end
 
-function onPlayerClick(player, args)
+function onPlayerClick(_, args)
 	local enemyTarget = args.target
 	if enemyTarget and enemyTarget:isbot() then return end
 	if (enemyTarget) and (pAfkList[enemyTarget].isAfk) then
@@ -174,14 +174,14 @@ function makeAnnounce(_, args)
 	client.broadcast:chat(MESSAGE_TYPE_ANNOUNCE, args)
 end
 
-function onMessage(cl, _, text)
+function onMessage(cl)
 	pLastActivity[cl].time = os.time()
 	if pAfkList[cl].isAfk then
 		cl:setdispname(pAfkList[cl].name)
 	end
 end
 
-function clientsCmd(caller)
+function clientsCmd()
 	local str = "&7Players using: \r\n"
 	for k, v in pairs(clients) do
 		str = str .. ("&7  %s: &f%s\r\n"):format(k, table.concat(v, ", "))
