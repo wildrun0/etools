@@ -1,6 +1,6 @@
 setInfo({
 	version = 1,
-	hotreload = false,
+	hotreload = true,
 	home = "https://github.com/wildrun0/etools"
 })
 -- API documentation: https://docs.igvx.ru/
